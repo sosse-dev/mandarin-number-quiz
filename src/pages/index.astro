@@ -196,7 +196,7 @@ const title = "🎧 Mandarin Number Listening Quiz";
         </div>
     </div>
 
-    <script>
+    <script is:inline>
         let currentNumber = 0;
         let maxRange = 1000;
         let difficulty = 'easy';
@@ -212,13 +212,13 @@ const title = "🎧 Mandarin Number Listening Quiz";
             if (num === 10) return '十';
             if (num < 20) return '十' + digits[num % 10];
             if (num < 100) {
-                let tens = Math.floor(num / 10);
-                let ones = num % 10;
+                const tens = Math.floor(num / 10);
+                const ones = num % 10;
                 return digits[tens] + '十' + (ones > 0 ? digits[ones] : '');
             }
             if (num < 1000) {
-                let hundreds = Math.floor(num / 100);
-                let remainder = num % 100;
+                const hundreds = Math.floor(num / 100);
+                const remainder = num % 100;
                 let result = digits[hundreds] + '百';
                 if (remainder > 0) {
                     if (remainder < 10) result += '零';
@@ -227,8 +227,8 @@ const title = "🎧 Mandarin Number Listening Quiz";
                 return result;
             }
             if (num < 10000) {
-                let thousands = Math.floor(num / 1000);
-                let remainder = num % 1000;
+                const thousands = Math.floor(num / 1000);
+                const remainder = num % 1000;
                 let result = digits[thousands] + '千';
                 if (remainder > 0) {
                     if (remainder < 100) result += '零';
@@ -247,13 +247,13 @@ const title = "🎧 Mandarin Number Listening Quiz";
             if (num === 10) return 'shí';
             if (num < 20) return 'shí ' + digits[num % 10];
             if (num < 100) {
-                let tens = Math.floor(num / 10);
-                let ones = num % 10;
+                const tens = Math.floor(num / 10);
+                const ones = num % 10;
                 return digits[tens] + ' shí' + (ones > 0 ? ' ' + digits[ones] : '');
             }
             if (num < 1000) {
-                let hundreds = Math.floor(num / 100);
-                let remainder = num % 100;
+                const hundreds = Math.floor(num / 100);
+                const remainder = num % 100;
                 let result = digits[hundreds] + ' bǎi';
                 if (remainder > 0) {
                     if (remainder < 10) result += ' líng';
@@ -262,8 +262,8 @@ const title = "🎧 Mandarin Number Listening Quiz";
                 return result;
             }
             if (num < 10000) {
-                let thousands = Math.floor(num / 1000);
-                let remainder = num % 1000;
+                const thousands = Math.floor(num / 1000);
+                const remainder = num % 1000;
                 let result = digits[thousands] + ' qiān';
                 if (remainder > 0) {
                     if (remainder < 100) result += ' líng';
@@ -288,82 +288,162 @@ const title = "🎧 Mandarin Number Listening Quiz";
         }
 
         function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-CN';
-            utterance.rate = 0.9;
-            speechSynthesis.speak(utterance);
+            // Cancel any ongoing speech first
+            window.speechSynthesis.cancel();
+            
+            // Small delay to ensure cancellation completes
+            setTimeout(() => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.8;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                
+                // Try to get Chinese voice
+                const voices = window.speechSynthesis.getVoices();
+                const chineseVoice = voices.find(voice => 
+                    voice.lang.includes('zh') || voice.lang.includes('CN')
+                );
+                
+                if (chineseVoice) {
+                    utterance.voice = chineseVoice;
+                }
+                
+                window.speechSynthesis.speak(utterance);
+            }, 100);
         }
 
         function updateStats() {
-            document.getElementById('question-number').textContent = questionCount;
-            document.getElementById('score').textContent = correctCount;
-            document.getElementById('total').textContent = questionCount;
+            const questionEl = document.getElementById('question-number');
+            const scoreEl = document.getElementById('score');
+            const totalEl = document.getElementById('total');
+            
+            if (questionEl) questionEl.textContent = String(questionCount);
+            if (scoreEl) scoreEl.textContent = String(correctCount);
+            if (totalEl) totalEl.textContent = String(questionCount);
         }
 
+        // Wait for voices to load
+        function loadVoices() {
+            return new Promise((resolve) => {
+                const voices = window.speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    resolve(voices);
+                } else {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        resolve(window.speechSynthesis.getVoices());
+                    };
+                }
+            });
+        }
+
+        // Load voices on page load
+        loadVoices();
+
         // Event Listeners
-        document.getElementById('start-btn').addEventListener('click', () => {
-            maxRange = parseInt(document.getElementById('max-range').value) || 1000;
-            difficulty = document.getElementById('difficulty').value;
-            
-            document.getElementById('settings-section').classList.add('hidden');
-            document.getElementById('quiz-section').classList.remove('hidden');
-            document.getElementById('stats').classList.remove('hidden');
-            
-            questionCount = 0;
-            correctCount = 0;
-            startNewQuestion();
-        });
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                const maxRangeInput = document.getElementById('max-range');
+                const difficultySelect = document.getElementById('difficulty');
+                
+                if (maxRangeInput && difficultySelect) {
+                    maxRange = parseInt(maxRangeInput.value) || 1000;
+                    difficulty = difficultySelect.value;
+                }
+                
+                const settingsSection = document.getElementById('settings-section');
+                const quizSection = document.getElementById('quiz-section');
+                const statsSection = document.getElementById('stats');
+                
+                if (settingsSection) settingsSection.classList.add('hidden');
+                if (quizSection) quizSection.classList.remove('hidden');
+                if (statsSection) statsSection.classList.remove('hidden');
+                
+                questionCount = 0;
+                correctCount = 0;
+                startNewQuestion();
+            });
+        }
 
-        document.getElementById('play-sound-btn').addEventListener('click', () => {
-            speak(currentNumber.toString());
-        });
+        const playSoundBtn = document.getElementById('play-sound-btn');
+        if (playSoundBtn) {
+            playSoundBtn.addEventListener('click', () => {
+                speak(currentNumber.toString());
+            });
+        }
 
-        document.getElementById('submit-btn').addEventListener('click', () => {
-            const userAnswer = parseInt(document.getElementById('user-answer').value);
-            const isCorrect = userAnswer === currentNumber;
-            
-            const resultMessage = document.getElementById('result-message');
-            const resultSection = document.getElementById('result-section');
-            const userAnswerDisplay = document.getElementById('user-answer-display');
-            
-            if (isCorrect) {
-                correctCount++;
-                resultMessage.className = 'p-4 rounded-2xl mb-4 text-center font-bold text-lg bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/50';
-                resultMessage.textContent = '✅ Correct! Well done!';
-                userAnswerDisplay.classList.add('hidden');
-            } else {
-                resultMessage.className = 'p-4 rounded-2xl mb-4 text-center font-bold text-lg bg-red-500/20 text-red-300 border-2 border-red-500/50';
-                resultMessage.textContent = '❌ Not quite right!';
-                document.getElementById('user-answer-value').textContent = userAnswer || 'No answer';
-                userAnswerDisplay.classList.remove('hidden');
-            }
-            
-            document.getElementById('correct-number').textContent = currentNumber;
-            document.getElementById('hanzi').textContent = numberToHanzi(currentNumber);
-            document.getElementById('pinyin').textContent = numberToPinyin(currentNumber);
-            
-            updateStats();
-            resultSection.classList.remove('hidden');
-            document.getElementById('submit-btn').classList.add('hidden');
-        });
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', () => {
+                const userAnswerInput = document.getElementById('user-answer');
+                const userAnswer = userAnswerInput ? parseInt(userAnswerInput.value) : NaN;
+                const isCorrect = userAnswer === currentNumber;
+                
+                const resultMessage = document.getElementById('result-message');
+                const resultSection = document.getElementById('result-section');
+                const userAnswerDisplay = document.getElementById('user-answer-display');
+                
+                if (resultMessage) {
+                    if (isCorrect) {
+                        correctCount++;
+                        resultMessage.className = 'p-4 rounded-2xl mb-4 text-center font-bold text-lg bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/50';
+                        resultMessage.textContent = '✅ Correct! Well done!';
+                        if (userAnswerDisplay) userAnswerDisplay.classList.add('hidden');
+                    } else {
+                        resultMessage.className = 'p-4 rounded-2xl mb-4 text-center font-bold text-lg bg-red-500/20 text-red-300 border-2 border-red-500/50';
+                        resultMessage.textContent = '❌ Not quite right!';
+                        const userAnswerValue = document.getElementById('user-answer-value');
+                        if (userAnswerValue) {
+                            userAnswerValue.textContent = isNaN(userAnswer) ? 'No answer' : String(userAnswer);
+                        }
+                        if (userAnswerDisplay) userAnswerDisplay.classList.remove('hidden');
+                    }
+                }
+                
+                const correctNumberEl = document.getElementById('correct-number');
+                const hanziEl = document.getElementById('hanzi');
+                const pinyinEl = document.getElementById('pinyin');
+                
+                if (correctNumberEl) correctNumberEl.textContent = String(currentNumber);
+                if (hanziEl) hanziEl.textContent = numberToHanzi(currentNumber);
+                if (pinyinEl) pinyinEl.textContent = numberToPinyin(currentNumber);
+                
+                updateStats();
+                if (resultSection) resultSection.classList.remove('hidden');
+                if (submitBtn) submitBtn.classList.add('hidden');
+            });
+        }
 
-        document.getElementById('next-btn').addEventListener('click', () => {
-            startNewQuestion();
-        });
+        const nextBtn = document.getElementById('next-btn');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                startNewQuestion();
+            });
+        }
 
-        document.getElementById('user-answer').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('submit-btn').click();
-            }
-        });
+        const userAnswerInput = document.getElementById('user-answer');
+        if (userAnswerInput) {
+            userAnswerInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && submitBtn) {
+                    submitBtn.click();
+                }
+            });
+        }
 
         function startNewQuestion() {
             questionCount++;
             currentNumber = generateNumber();
-            document.getElementById('user-answer').value = '';
-            document.getElementById('result-section').classList.add('hidden');
-            document.getElementById('submit-btn').classList.remove('hidden');
-            document.getElementById('user-answer').focus();
+            
+            const userAnswerInput = document.getElementById('user-answer');
+            const resultSection = document.getElementById('result-section');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            if (userAnswerInput) userAnswerInput.value = '';
+            if (resultSection) resultSection.classList.add('hidden');
+            if (submitBtn) submitBtn.classList.remove('hidden');
+            if (userAnswerInput) userAnswerInput.focus();
+            
             updateStats();
         }
     </script>
