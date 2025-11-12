@@ -1,11 +1,371 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+// src/pages/index.astro
+import '../styles/global.css';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const title = "🎧 Mandarin Number Listening Quiz";
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.4s ease-out forwards;
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        .btn-glow:hover {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 min-h-screen flex items-center justify-center p-4 font-[Inter] overflow-x-hidden">
+    <!-- Animated background particles -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-10 w-2 h-2 bg-cyan-400/30 rounded-full animate-float"></div>
+        <div class="absolute top-40 right-20 w-3 h-3 bg-emerald-400/20 rounded-full animate-float" style="animation-delay: 0.5s"></div>
+        <div class="absolute bottom-32 left-1/4 w-2 h-2 bg-purple-400/30 rounded-full animate-float" style="animation-delay: 1s"></div>
+        <div class="absolute bottom-20 right-1/3 w-3 h-3 bg-pink-400/20 rounded-full animate-float" style="animation-delay: 1.5s"></div>
+    </div>
+
+    <div class="w-full max-w-lg relative z-10">
+        <!-- Card Container -->
+        <div class="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-700/50 animate-slide-in">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-block animate-float">
+                    <span class="text-5xl sm:text-6xl mb-3 block">🎧</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    Mandarin Number Quiz
+                </h1>
+                <p class="text-gray-400 text-sm mt-2">Practice your listening skills</p>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="space-y-5">
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-300">
+                        📊 Maximum Range
+                    </label>
+                    <input 
+                        type="number" 
+                        id="max-range" 
+                        value="1000"
+                        class="w-full px-4 py-3 bg-gray-700/50 border-2 border-gray-600/50 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:bg-gray-700/70 transition-all duration-300"
+                        placeholder="e.g., 1000"
+                    >
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-300">
+                        🎯 Difficulty Level
+                    </label>
+                    <select 
+                        id="difficulty" 
+                        class="w-full px-4 py-3 bg-gray-700/50 border-2 border-gray-600/50 rounded-2xl text-white focus:outline-none focus:border-cyan-500/50 focus:bg-gray-700/70 transition-all duration-300 cursor-pointer"
+                    >
+                        <option value="easy">🟢 Easy - Round Numbers</option>
+                        <option value="medium">🟡 Medium - Semi-Complex</option>
+                        <option value="hard">🔴 Hard - Random Numbers</option>
+                    </select>
+                </div>
+
+                <button 
+                    id="start-btn"
+                    class="w-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 hover:from-emerald-600 hover:via-cyan-600 hover:to-blue-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-emerald-500/50 mt-6"
+                >
+                    <span class="flex items-center justify-center gap-2">
+                        <span>Start Quiz</span>
+                        <span class="text-xl">→</span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Quiz Section -->
+            <div id="quiz-section" class="hidden space-y-5">
+                <!-- Play Sound Button -->
+                <div class="flex justify-center">
+                    <button 
+                        id="play-sound-btn"
+                        class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold px-10 py-5 rounded-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-xl hover:shadow-purple-500/50 text-lg btn-glow"
+                    >
+                        <span class="flex items-center gap-3">
+                            <span class="text-2xl">🔊</span>
+                            <span>Play Sound</span>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Answer Input -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-300">
+                        ✏️ Your Answer
+                    </label>
+                    <input 
+                        type="number" 
+                        id="user-answer" 
+                        class="w-full px-5 py-4 bg-gray-700/50 border-2 border-gray-600/50 rounded-2xl text-white text-lg placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:bg-gray-700/70 transition-all duration-300"
+                        placeholder="Type the number..."
+                    >
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    id="submit-btn"
+                    class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-cyan-500/50"
+                >
+                    Check Answer ✓
+                </button>
+
+                <!-- Result Display -->
+                <div id="result-section" class="hidden animate-slide-in">
+                    <!-- Result Message -->
+                    <div id="result-message" class="p-4 rounded-2xl mb-4 text-center font-bold text-lg"></div>
+                    
+                    <!-- Answer Details Card -->
+                    <div class="bg-gradient-to-br from-gray-700/40 to-gray-800/40 backdrop-blur-sm p-5 rounded-2xl space-y-3 border border-gray-600/30">
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-gray-400 font-medium">Number:</span>
+                            <span id="correct-number" class="font-bold text-xl text-cyan-400"></span>
+                        </div>
+                        <div class="h-px bg-gray-600/50"></div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-gray-400 font-medium">Hanzi:</span>
+                            <span id="hanzi" class="font-bold text-2xl text-emerald-400"></span>
+                        </div>
+                        <div class="h-px bg-gray-600/50"></div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-gray-400 font-medium">Pinyin:</span>
+                            <span id="pinyin" class="font-semibold text-gray-200"></span>
+                        </div>
+                        <div id="user-answer-display" class="hidden">
+                            <div class="h-px bg-red-500/30"></div>
+                            <div class="flex justify-between items-center py-2">
+                                <span class="text-gray-400 font-medium">Your Answer:</span>
+                                <span id="user-answer-value" class="font-bold text-xl text-red-400"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next Button (Floating Right) -->
+                    <div class="flex justify-end mt-4">
+                        <button 
+                            id="next-btn"
+                            class="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold px-8 py-3 rounded-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-blue-500/50"
+                        >
+                            <span class="flex items-center gap-2">
+                                <span>Next</span>
+                                <span class="text-lg">→</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Footer -->
+        <div id="stats" class="hidden text-center mt-6 text-gray-400 text-sm space-y-1 animate-slide-in">
+            <div>Question <span id="question-number" class="text-cyan-400 font-semibold">1</span></div>
+            <div>Score: <span id="score" class="text-emerald-400 font-semibold">0</span> / <span id="total" class="text-gray-300">0</span></div>
+        </div>
+    </div>
+
+    <script>
+        let currentNumber = 0;
+        let maxRange = 1000;
+        let difficulty = 'easy';
+        let questionCount = 0;
+        let correctCount = 0;
+
+        // Number to Chinese conversion
+        function numberToHanzi(num) {
+            const digits = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+            
+            if (num === 0) return '零';
+            if (num < 10) return digits[num];
+            if (num === 10) return '十';
+            if (num < 20) return '十' + digits[num % 10];
+            if (num < 100) {
+                let tens = Math.floor(num / 10);
+                let ones = num % 10;
+                return digits[tens] + '十' + (ones > 0 ? digits[ones] : '');
+            }
+            if (num < 1000) {
+                let hundreds = Math.floor(num / 100);
+                let remainder = num % 100;
+                let result = digits[hundreds] + '百';
+                if (remainder > 0) {
+                    if (remainder < 10) result += '零';
+                    result += numberToHanzi(remainder);
+                }
+                return result;
+            }
+            if (num < 10000) {
+                let thousands = Math.floor(num / 1000);
+                let remainder = num % 1000;
+                let result = digits[thousands] + '千';
+                if (remainder > 0) {
+                    if (remainder < 100) result += '零';
+                    result += numberToHanzi(remainder);
+                }
+                return result;
+            }
+            
+            return num.toString();
+        }
+
+        function numberToPinyin(num) {
+            const digits = ['líng', 'yī', 'èr', 'sān', 'sì', 'wǔ', 'liù', 'qī', 'bā', 'jiǔ'];
+            
+            if (num === 0) return 'líng';
+            if (num === 10) return 'shí';
+            if (num < 20) return 'shí ' + digits[num % 10];
+            if (num < 100) {
+                let tens = Math.floor(num / 10);
+                let ones = num % 10;
+                return digits[tens] + ' shí' + (ones > 0 ? ' ' + digits[ones] : '');
+            }
+            if (num < 1000) {
+                let hundreds = Math.floor(num / 100);
+                let remainder = num % 100;
+                let result = digits[hundreds] + ' bǎi';
+                if (remainder > 0) {
+                    if (remainder < 10) result += ' líng';
+                    result += ' ' + numberToPinyin(remainder);
+                }
+                return result;
+            }
+            if (num < 10000) {
+                let thousands = Math.floor(num / 1000);
+                let remainder = num % 1000;
+                let result = digits[thousands] + ' qiān';
+                if (remainder > 0) {
+                    if (remainder < 100) result += ' líng';
+                    result += ' ' + numberToPinyin(remainder);
+                }
+                return result;
+            }
+            
+            return num.toString();
+        }
+
+        function generateNumber() {
+            if (difficulty === 'easy') {
+                const options = [10, 20, 50, 100, 200, 500, 1000];
+                const filtered = options.filter(n => n <= maxRange);
+                return filtered[Math.floor(Math.random() * filtered.length)] || Math.floor(Math.random() * Math.min(100, maxRange)) + 1;
+            } else if (difficulty === 'medium') {
+                return Math.floor(Math.random() * Math.min(10000, maxRange)) + 100;
+            } else {
+                return Math.floor(Math.random() * maxRange) + 1;
+            }
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
+            speechSynthesis.speak(utterance);
+        }
+
+        function updateStats() {
+            document.getElementById('question-number').textContent = questionCount;
+            document.getElementById('score').textContent = correctCount;
+            document.getElementById('total').textContent = questionCount;
+        }
+
+        // Event Listeners
+        document.getElementById('start-btn').addEventListener('click', () => {
+            maxRange = parseInt(document.getElementById('max-range').value) || 1000;
+            difficulty = document.getElementById('difficulty').value;
+            
+            document.getElementById('settings-section').classList.add('hidden');
+            document.getElementById('quiz-section').classList.remove('hidden');
+            document.getElementById('stats').classList.remove('hidden');
+            
+            questionCount = 0;
+            correctCount = 0;
+            startNewQuestion();
+        });
+
+        document.getElementById('play-sound-btn').addEventListener('click', () => {
+            speak(currentNumber.toString());
+        });
+
+        document.getElementById('submit-btn').addEventListener('click', () => {
+            const userAnswer = parseInt(document.getElementById('user-answer').value);
+            const isCorrect = userAnswer === currentNumber;
+            
+            const resultMessage = document.getElementById('result-message');
+            const resultSection = document.getElementById('result-section');
+            const userAnswerDisplay = document.getElementById('user-answer-display');
+            
+            if (isCorrect) {
+                correctCount++;
+                resultMessage.className = 'p-4 rounded-2xl mb-4 text-center font-bold text-lg bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/50';
+                resultMessage.textContent = '✅ Correct! Well done!';
+                userAnswerDisplay.classList.add('hidden');
+            } else {
+                resultMessage.className = 'p-4 rounded-2xl mb-4 text-center font-bold text-lg bg-red-500/20 text-red-300 border-2 border-red-500/50';
+                resultMessage.textContent = '❌ Not quite right!';
+                document.getElementById('user-answer-value').textContent = userAnswer || 'No answer';
+                userAnswerDisplay.classList.remove('hidden');
+            }
+            
+            document.getElementById('correct-number').textContent = currentNumber;
+            document.getElementById('hanzi').textContent = numberToHanzi(currentNumber);
+            document.getElementById('pinyin').textContent = numberToPinyin(currentNumber);
+            
+            updateStats();
+            resultSection.classList.remove('hidden');
+            document.getElementById('submit-btn').classList.add('hidden');
+        });
+
+        document.getElementById('next-btn').addEventListener('click', () => {
+            startNewQuestion();
+        });
+
+        document.getElementById('user-answer').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('submit-btn').click();
+            }
+        });
+
+        function startNewQuestion() {
+            questionCount++;
+            currentNumber = generateNumber();
+            document.getElementById('user-answer').value = '';
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('user-answer').focus();
+            updateStats();
+        }
+    </script>
+</body>
+</html>
