@@ -110,10 +110,9 @@ const title = "🎧 Mandarin Number Listening Quiz";
                         id="voice-select" 
                         class="w-full px-4 py-3 bg-gray-700/50 border-2 border-gray-600/50 rounded-2xl text-white focus:outline-none focus:border-cyan-500/50 focus:bg-gray-700/70 transition-all duration-300 cursor-pointer"
                     >
-                        <option value="zh-CN-XiaoxiaoNeural">👩 Xiaoxiao (Female) - Natural</option>
-                        <option value="zh-CN-YunxiNeural">👨 Yunxi (Male) - Natural</option>
-                        <option value="zh-CN-YunyangNeural">👨 Yunyang (Male) - Professional</option>
-                        <option value="zh-CN-XiaoyiNeural">👩 Xiaoyi (Female) - Friendly</option>
+                        <option value="Zhiyu">👩 Zhiyu - Female (Clear & Natural)</option>
+                        <option value="Zhiyu" data-speed="0.9">👩 Zhiyu - Female Slow</option>
+                        <option value="Zhiyu" data-speed="1.1">👩 Zhiyu - Female Fast</option>
                     </select>
                 </div>
 
@@ -229,7 +228,8 @@ const title = "🎧 Mandarin Number Listening Quiz";
         let difficulty = 'easy';
         let questionCount = 0;
         let correctCount = 0;
-        let selectedVoice = 'zh-CN-XiaoxiaoNeural';
+        let selectedVoice = 'Zhiyu';
+        let selectedSpeed = 1.0;
         let currentAudio = null;
 
         // Number to Chinese conversion
@@ -316,8 +316,8 @@ const title = "🎧 Mandarin Number Listening Quiz";
             }
         }
 
-        // TTS - Convert number to Chinese then speak
-        async function speakWithEdgeTTS(number) {
+        // TTSMP3.com API - Best Mandarin TTS!
+        async function speakNumber(number) {
             const playBtn = document.getElementById('play-sound-btn');
             const playBtnContent = document.getElementById('play-btn-content');
             const loadingSpinner = document.getElementById('loading-spinner');
@@ -327,125 +327,59 @@ const title = "🎧 Mandarin Number Listening Quiz";
             if (loadingSpinner) loadingSpinner.classList.remove('hidden');
             
             try {
-                // Stop current audio if playing
+                // Stop current audio
                 if (currentAudio) {
                     currentAudio.pause();
-                    currentAudio = null;
+                    currentAudio.currentTime = 0;
                 }
 
-                // PENTING: Convert ke Chinese text DULU!
                 const chineseText = numberToHanzi(number);
                 console.log('Speaking Chinese:', chineseText);
 
-                // Map voice selection to TikTok voices
-                const voiceMap = {
-                    'zh-CN-XiaoxiaoNeural': 'zh_CN_female',
-                    'zh-CN-YunxiNeural': 'zh_CN_male',
-                    'zh-CN-YunyangNeural': 'zh_CN_male',
-                    'zh-CN-XiaoyiNeural': 'zh_CN_female'
-                };
+                // TTSMP3 API
+                const formData = new FormData();
+                formData.append('msg', chineseText);
+                formData.append('lang', 'Zhiyu'); // Mandarin Chinese voice
+                formData.append('source', 'ttsmp3');
 
-                const tiktokVoice = voiceMap[selectedVoice] || 'zh_CN_female';
-
-                // Method 1: Try TikTok TTS API
-                try {
-                    const response = await fetch(`https://tiktok-tts.weilnet.workers.dev/api/generation`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            text: chineseText,  // Pakai Chinese text!
-                            voice: tiktokVoice
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.data && data.data.v_str) {
-                            // Convert base64 to audio
-                            const audioData = 'data:audio/mp3;base64,' + data.data.v_str;
-                            const audio = new Audio(audioData);
-                            currentAudio = audio;
-                            
-                            await audio.play();
-                            
-                            audio.onended = () => {
-                                if (playBtn) playBtn.disabled = false;
-                                if (playBtnContent) playBtnContent.classList.remove('invisible');
-                                if (loadingSpinner) loadingSpinner.classList.add('hidden');
-                            };
-                            
-                            audio.onerror = () => {
-                                console.error('Audio playback error');
-                                if (playBtn) playBtn.disabled = false;
-                                if (playBtnContent) playBtnContent.classList.remove('invisible');
-                                if (loadingSpinner) loadingSpinner.classList.add('hidden');
-                            };
-                            
-                            console.log('TikTok TTS success!');
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    console.log('TikTok TTS failed:', e);
-                }
-
-                // Method 2: Browser SpeechSynthesis fallback (DENGAN CHINESE TEXT!)
-                console.log('Using browser fallback with Chinese text');
-                
-                // Wait for voices to load
-                await new Promise((resolve) => {
-                    const voices = window.speechSynthesis.getVoices();
-                    if (voices.length > 0) {
-                        resolve();
-                    } else {
-                        window.speechSynthesis.onvoiceschanged = () => resolve();
-                    }
+                const response = await fetch('https://ttsmp3.com/makemp3_new.php', {
+                    method: 'POST',
+                    body: formData
                 });
+
+                const data = await response.json();
                 
-                window.speechSynthesis.cancel();
-                
-                const utterance = new SpeechSynthesisUtterance(chineseText); // Pakai Chinese!
-                utterance.lang = 'zh-CN';
-                utterance.rate = 0.7;
-                utterance.pitch = 1.0;
-                utterance.volume = 1.0;
-                
-                // Get available voices and pick Chinese one
-                const voices = window.speechSynthesis.getVoices();
-                console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
-                
-                // Try to find best Chinese voice
-                const chineseVoice = voices.find(voice => 
-                    voice.lang === 'zh-CN' || voice.lang === 'zh-Hans-CN' || voice.lang.startsWith('zh')
-                );
-                
-                if (chineseVoice) {
-                    utterance.voice = chineseVoice;
-                    console.log('Using voice:', chineseVoice.name, chineseVoice.lang);
+                if (data.Error === 0 && data.URL) {
+                    console.log('Audio URL:', data.URL);
+                    
+                    const audio = new Audio(data.URL);
+                    currentAudio = audio;
+                    
+                    // Adjust playback speed if needed
+                    audio.playbackRate = selectedSpeed;
+                    
+                    await audio.play();
+                    
+                    audio.onended = () => {
+                        if (playBtn) playBtn.disabled = false;
+                        if (playBtnContent) playBtnContent.classList.remove('invisible');
+                        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+                    };
+                    
+                    audio.onerror = (e) => {
+                        console.error('Audio playback error:', e);
+                        alert('Failed to play audio. Please try again.');
+                        if (playBtn) playBtn.disabled = false;
+                        if (playBtnContent) playBtnContent.classList.remove('invisible');
+                        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+                    };
                 } else {
-                    console.warn('No Chinese voice found! Available voices:', voices.length);
+                    throw new Error('Failed to generate audio: ' + (data.Text || 'Unknown error'));
                 }
-                
-                utterance.onend = () => {
-                    if (playBtn) playBtn.disabled = false;
-                    if (playBtnContent) playBtnContent.classList.remove('invisible');
-                    if (loadingSpinner) loadingSpinner.classList.add('hidden');
-                };
-                
-                utterance.onerror = (e) => {
-                    console.error('Speech error:', e);
-                    if (playBtn) playBtn.disabled = false;
-                    if (playBtnContent) playBtnContent.classList.remove('invisible');
-                    if (loadingSpinner) loadingSpinner.classList.add('hidden');
-                };
-                
-                window.speechSynthesis.speak(utterance);
                 
             } catch (error) {
                 console.error('TTS Error:', error);
-                alert('Audio failed to load. Please try again.');
+                alert('Failed to generate audio. Please check your internet connection and try again.');
                 if (playBtn) playBtn.disabled = false;
                 if (playBtnContent) playBtnContent.classList.remove('invisible');
                 if (loadingSpinner) loadingSpinner.classList.add('hidden');
@@ -472,7 +406,12 @@ const title = "🎧 Mandarin Number Listening Quiz";
                 
                 if (maxRangeInput) maxRange = parseInt(maxRangeInput.value) || 1000;
                 if (difficultySelect) difficulty = difficultySelect.value;
-                if (voiceSelect) selectedVoice = voiceSelect.value;
+                if (voiceSelect) {
+                    selectedVoice = voiceSelect.value;
+                    // Get speed from data attribute
+                    const selectedOption = voiceSelect.options[voiceSelect.selectedIndex];
+                    selectedSpeed = parseFloat(selectedOption.dataset.speed) || 1.0;
+                }
                 
                 const settingsSection = document.getElementById('settings-section');
                 const quizSection = document.getElementById('quiz-section');
@@ -491,7 +430,7 @@ const title = "🎧 Mandarin Number Listening Quiz";
         const playSoundBtn = document.getElementById('play-sound-btn');
         if (playSoundBtn) {
             playSoundBtn.addEventListener('click', () => {
-                speakWithEdgeTTS(currentNumber); // Pass number, bukan string!
+                speakNumber(currentNumber);
             });
         }
 
